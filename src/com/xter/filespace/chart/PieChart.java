@@ -83,33 +83,23 @@ public class PieChart {
 		mCategorySeries.add(s + " " + FileUtils.getFileSizeFormat((long) v), v);
 		mChartView.repaint();
 	}
-	
-	public void resetSeries(){
-		
-	}
 
 	public void setTitle(String s, long size) {
-//		optiSeries(size);
+		optiSeries(size);
 		mRenderer.setChartTitle(s + "  " + FileUtils.getFileSizeFormat(size));
 		mRenderer.setChartTitleTextSize(40);
 		mChartView.repaint();
 	}
 
 	public void optiSeries(long size) {
-		int length = mCategorySeries.getItemCount();
-		List<Integer> otherIndexs = new ArrayList<Integer>();
-		Log.i("len", length + "");
 		long other = 0;
-		for (int i = 0; i < length; i++) {
+		for (int i = 0; i < mCategorySeries.getItemCount(); i++) {
 			double v = mCategorySeries.getValue(i);
 			if (v < size / 100) {
-				otherIndexs.add(i);
+				mCategorySeries.remove(i);
+				i--;
 				other += v;
 			}
-		}
-		int otherLength = otherIndexs.size();
-		for (int i = 0; i < otherLength; i++) {
-			mCategorySeries.remove(otherIndexs.get(i));
 		}
 		addSeries("other " + FileUtils.getFileSizeFormat(other), other);
 	}

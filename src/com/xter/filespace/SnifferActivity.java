@@ -13,7 +13,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -78,6 +77,12 @@ public class SnifferActivity extends Activity {
 		}
 	}
 
+	/**
+	 * 扫描文件任务
+	 * 
+	 * @author XTER
+	 *
+	 */
 	static class ScanTask extends AsyncTask<String, String, Void> {
 
 		TextView tvProgress;
@@ -94,18 +99,14 @@ public class SnifferActivity extends Activity {
 			if (file.isDirectory()) {
 				File[] files = file.listFiles();
 				int length = files.length;
-				//目录总大小
+				// 目录总大小
 				long total = 0;
-				//目录中较小文件集合大小
-				long other = 0;
 				for (int i = 0; i < length; i++) {
 					long size = FileUtils.getFileSize(files[i]);
-					
-					//TO DO 较小文件处理
-					pie.addSeries(files[i].getName() , size);
+					pie.addSeries(files[i].getName(), size);
 					total += size;
 				}
-				pie.setTitle(file.getAbsolutePath(),total);
+				pie.setTitle(file.getAbsolutePath(), total);
 			} else {
 				long size = FileUtils.getFileSize(file);
 				pie.addSeries(file.getName() + " " + FileUtils.getFileSizeFormat(size), size);
@@ -122,7 +123,6 @@ public class SnifferActivity extends Activity {
 		@Override
 		protected void onProgressUpdate(String... values) {
 			tvProgress.setText(values[0]);
-			Log.i(values[0], values[1]);
 		}
 	}
 
