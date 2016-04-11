@@ -4,24 +4,17 @@
     android:layout_height="match_parent"
     tools:context="${relativePackage}.${activityClass}" >
 
-    <Button
-        android:id="@+id/btn_add"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:clickable="true"
-        android:focusable="true" />
-
     <TextView
         android:id="@+id/tv_scan"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@id/btn_add" />
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true" />
 
     <LinearLayout
         android:id="@+id/sniffer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/btn_add"
         android:orientation="vertical" >
     </LinearLayout>
 

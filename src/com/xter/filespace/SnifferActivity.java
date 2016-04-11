@@ -4,60 +4,59 @@ import java.io.File;
 import java.io.IOException;
 
 import com.xter.filespace.chart.PieChart;
+import com.xter.filespace.chart.PieChart.SeriesClickListener;
 import com.xter.filespace.util.FileUtils;
 import com.xter.filespace.util.LinuxShell;
+import com.xter.filespace.util.LogUtils;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
-import android.util.Log;
+import android.os.StatFs;
 import android.view.View;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class SnifferActivity extends Activity {
+public class SnifferActivity extends Activity implements SeriesClickListener {
 
 	LinearLayout mSnifferLayout;
 	PieChart pie;
 
-	Button btnAdd;
 	TextView tvScan;
 
-	static final String ROOT = "/";
+	LinuxShell linux;
+	SharedPreferences pre;
+	boolean isRoot;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_sniffer);
-		// startActivity(new Intent(this,PieActivity.class));
-		// fetchRoot();
 		initLayout();
 		initData();
 	}
 
 	protected void initLayout() {
 		pie = new PieChart();
-		View pieView = pie.getChartView(this);
-		mSnifferLayout = (LinearLayout) findViewById(R.id.sniffer);
-		mSnifferLayout.addView(pieView);
 
-		btnAdd = (Button) findViewById(R.id.btn_add);
+		mSnifferLayout = (LinearLayout) findViewById(R.id.sniffer);
+
 		tvScan = (TextView) findViewById(R.id.tv_scan);
 	}
 
 	protected void initData() {
-		new ScanTask(tvScan, pie).execute(Environment.getExternalStorageDirectory().getAbsolutePath());
-		// btnAdd.setOnClickListener(new OnClickListener() {
-		//
-		// @Override
-		// public void onClick(View v) {
-		// Log.i("kk", "kkkkk");
-		// pie.addSeries("kkk", 22);
-		// }
-		// });
+		pre = getSharedPreferences("setting", Context.MODE_PRIVATE);
+		isRoot = pre.getBoolean("root", false);
+		if (!isRoot)
+			fetchRoot();
+		linux = new LinuxShell(Runtime.getRuntime());
+
+		String[] sds = FileUtils.getStorageDir(this);
+		getSpaceInfo(sds[1]);
+		new ScanTask(tvScan, pie, mSnifferLayout, this).execute(sds[0]);
 	}
 
 	/**
@@ -65,11 +64,17 @@ public class SnifferActivity extends Activity {
 	 */
 	protected void fetchRoot() {
 		try {
+			SharedPreferences.Editor editor = pre.edit();
 			if (LinuxShell.isRoot(Runtime.getRuntime(), 100)) {
 				Toast.makeText(getApplicationContext(), "root successed", Toast.LENGTH_SHORT).show();
+				isRoot = true;
+				editor.putBoolean("root", true);
 			} else {
 				Toast.makeText(getApplicationContext(), "root failed", Toast.LENGTH_SHORT).show();
+				isRoot = false;
+				editor.putBoolean("root", false);
 			}
+			editor.apply();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
@@ -85,32 +90,41 @@ public class SnifferActivity extends Activity {
 	 */
 	static class ScanTask extends AsyncTask<String, String, Void> {
 
+		LinearLayout mSnifferLayout;
 		TextView tvProgress;
 		PieChart pie;
+		View view;
 
-		ScanTask(TextView tv, PieChart pieC) {
+		ScanTask(TextView tv, PieChart pieC, LinearLayout layout, Context context) {
 			tvProgress = tv;
 			pie = pieC;
+			mSnifferLayout = layout;
+			view = pie.getChartView(context);
 		}
 
 		@Override
 		protected Void doInBackground(String... params) {
+			mSnifferLayout.removeView(view);
 			File file = new File(params[0]);
 			if (file.isDirectory()) {
 				File[] files = file.listFiles();
-				int length = files.length;
-				// 目录总大小
-				long total = 0;
-				for (int i = 0; i < length; i++) {
-					long size = FileUtils.getFileSize(files[i]);
-					pie.addSeries(files[i].getName(), size);
-					total += size;
+				if (files != null) {
+					int length = files.length;
+					// 目录总大小
+					long total = 0;
+					// 遍历目录中各文件夹或文件
+					for (int i = 0; i < length; i++) {
+						long size = FileUtils.getFileSize(files[i]);
+						pie.addSeries(files[i].getName(), size);
+						total += size;
+						publishProgress(files[i].getAbsolutePath(), "" + size);
+					}
+					pie.setTitle(file.getAbsolutePath(), total);
 				}
-				pie.setTitle(file.getAbsolutePath(), total);
 			} else {
 				long size = FileUtils.getFileSize(file);
-				pie.addSeries(file.getName() + " " + FileUtils.getFileSizeFormat(size), size);
-				publishProgress(file.getName(), "" + size);
+				pie.addSeries(file.getName(), size);
+				publishProgress(file.getAbsolutePath(), "" + size);
 			}
 			return null;
 		}
@@ -118,12 +132,33 @@ public class SnifferActivity extends Activity {
 		@Override
 		protected void onPostExecute(Void result) {
 			tvProgress.setText("scan finished");
+			mSnifferLayout.addView(view);
 		}
 
 		@Override
 		protected void onProgressUpdate(String... values) {
 			tvProgress.setText(values[0]);
+			LogUtils.i(values[0] + "  " + values[1]);
 		}
+	}
+
+	/**
+	 * 查看已用空间
+	 * @param path 路径
+	 */
+	protected void getSpaceInfo(String path) {
+		StatFs sf = new StatFs(path);
+		LogUtils.d("已用" + FileUtils.getFileSizeFormat(sf.getTotalBytes() - sf.getAvailableBytes()));
+	}
+
+	@Override
+	public void onBackPressed() {
+
+	}
+
+	@Override
+	public void onSeriesClick(String path) {
+		new ScanTask(tvScan, pie, mSnifferLayout, this).execute(path);
 	}
 
 }
