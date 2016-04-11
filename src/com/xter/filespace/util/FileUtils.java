@@ -51,6 +51,7 @@ public class FileUtils {
 
 	/**
 	 * 得到当前挂载的SD卡
+	 * 
 	 * @param context 上下文
 	 * @return
 	 */
@@ -78,6 +79,10 @@ public class FileUtils {
 	public static String getFilePathFromChart(String title, String renderer) {
 		return title.substring(0, title.lastIndexOf(" ") - 1) + File.separator
 				+ renderer.substring(0, renderer.lastIndexOf(" "));
+	}
+
+	public static String getFilePathFromChartTitle(String title) {
+		return title.substring(0, title.lastIndexOf(" ") - 1);
 	}
 
 }

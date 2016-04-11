@@ -14,8 +14,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.StatFs;
-import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,12 +22,13 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 
 	LinearLayout mSnifferLayout;
 	PieChart pie;
-
 	TextView tvScan;
 
-	LinuxShell linux;
 	SharedPreferences pre;
 	boolean isRoot;
+
+	String[] sdDirs;
+	long exitTime;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -45,18 +44,16 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 		mSnifferLayout = (LinearLayout) findViewById(R.id.sniffer);
 
 		tvScan = (TextView) findViewById(R.id.tv_scan);
+		mSnifferLayout.addView(pie.getChartView(this));
 	}
 
 	protected void initData() {
+		sdDirs = FileUtils.getStorageDir(this);
 		pre = getSharedPreferences("setting", Context.MODE_PRIVATE);
 		isRoot = pre.getBoolean("root", false);
 		if (!isRoot)
 			fetchRoot();
-		linux = new LinuxShell(Runtime.getRuntime());
-
-		String[] sds = FileUtils.getStorageDir(this);
-		getSpaceInfo(sds[1]);
-		new ScanTask(tvScan, pie, mSnifferLayout, this).execute(sds[0]);
+		new ScanTask(tvScan, pie).execute(sdDirs[0]);
 	}
 
 	/**
@@ -89,22 +86,22 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 	 *
 	 */
 	static class ScanTask extends AsyncTask<String, String, Void> {
-
-		LinearLayout mSnifferLayout;
 		TextView tvProgress;
 		PieChart pie;
-		View view;
 
-		ScanTask(TextView tv, PieChart pieC, LinearLayout layout, Context context) {
+		ScanTask(TextView tv, PieChart pieC) {
 			tvProgress = tv;
 			pie = pieC;
-			mSnifferLayout = layout;
-			view = pie.getChartView(context);
+		}
+
+		@Override
+		protected void onPreExecute() {
+			pie.hide();
+			pie.reset();
 		}
 
 		@Override
 		protected Void doInBackground(String... params) {
-			mSnifferLayout.removeView(view);
 			File file = new File(params[0]);
 			if (file.isDirectory()) {
 				File[] files = file.listFiles();
@@ -122,9 +119,7 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 					pie.setTitle(file.getAbsolutePath(), total);
 				}
 			} else {
-				long size = FileUtils.getFileSize(file);
-				pie.addSeries(file.getName(), size);
-				publishProgress(file.getAbsolutePath(), "" + size);
+				
 			}
 			return null;
 		}
@@ -132,7 +127,7 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 		@Override
 		protected void onPostExecute(Void result) {
 			tvProgress.setText("scan finished");
-			mSnifferLayout.addView(view);
+			pie.show();
 		}
 
 		@Override
@@ -142,23 +137,32 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 		}
 	}
 
-	/**
-	 * 查看已用空间
-	 * @param path 路径
-	 */
-	protected void getSpaceInfo(String path) {
-		StatFs sf = new StatFs(path);
-		LogUtils.d("已用" + FileUtils.getFileSizeFormat(sf.getTotalBytes() - sf.getAvailableBytes()));
-	}
-
 	@Override
 	public void onBackPressed() {
-
+		String path = pie.getTitle();
+		long time = System.currentTimeMillis();
+		for (int i = 0; i < sdDirs.length; i++) {
+			if (path.equalsIgnoreCase(sdDirs[i])) {
+				if (time - exitTime > 2000) {
+					exitTime = time;
+					Toast.makeText(this, "再按一次退出", Toast.LENGTH_SHORT).show();
+				} else {
+					super.onBackPressed();
+				}
+			} else {
+				new ScanTask(tvScan, pie).execute(new File(path).getParent());
+			}
+		}
 	}
 
 	@Override
 	public void onSeriesClick(String path) {
-		new ScanTask(tvScan, pie, mSnifferLayout, this).execute(path);
+		File f = new File(path);
+		if (f.isDirectory() || path.contains("other")) {
+			new ScanTask(tvScan, pie).execute(path);
+		} else {
+			Toast.makeText(getApplicationContext(), path + " is not a dir", Toast.LENGTH_SHORT).show();
+		}
 	}
 
 }

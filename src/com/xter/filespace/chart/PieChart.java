@@ -1,7 +1,5 @@
 package com.xter.filespace.chart;
 
-import java.util.Random;
-
 import org.achartengine.ChartFactory;
 import org.achartengine.GraphicalView;
 import org.achartengine.model.CategorySeries;
@@ -45,6 +43,11 @@ public class PieChart {
 	 */
 	static final int[] COLORS = new int[] { Color.BLUE, Color.GREEN, Color.MAGENTA, Color.YELLOW, Color.CYAN };
 
+	public PieChart() {
+		buildCategorySeries();
+		buildCategoryRenderer();
+	}
+
 	/**
 	 * 获取图表
 	 * 
@@ -53,8 +56,6 @@ public class PieChart {
 	 */
 	public View getChartView(Context context) {
 		seriesClickListener = (SeriesClickListener) context;
-		buildCategorySeries();
-		buildCategoryRenderer();
 		mChartView = ChartFactory.getPieChartView(context, mCategorySeries, mRenderer);
 		mChartView.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -62,14 +63,16 @@ public class PieChart {
 				SeriesSelection seriesSelection = mChartView.getCurrentSeriesAndPoint();
 				if (seriesSelection != null) {
 					int index = seriesSelection.getPointIndex();
+					// if(index == mRenderer.getSeriesRendererCount()-1){
+					//
+					// }
 					SimpleSeriesRenderer ssr = mRenderer.getSeriesRendererAt(index);
 					ssr.setHighlighted(!ssr.isHighlighted());
 					mChartView.repaint();
 					// 点击进入下一个目录，视图重绘
-					seriesClickListener.onSeriesClick(FileUtils.getFilePathFromChart(mRenderer.getChartTitle(),
-							mCategorySeries.getCategory(index)));
-					LogUtils.d(FileUtils.getFilePathFromChart(mRenderer.getChartTitle(),
-							mCategorySeries.getCategory(index)));
+					if (!ssr.isHighlighted())
+						seriesClickListener.onSeriesClick(FileUtils.getFilePathFromChart(mRenderer.getChartTitle(),
+								mCategorySeries.getCategory(index)));
 				}
 			}
 		});
@@ -88,12 +91,6 @@ public class PieChart {
 	 */
 	protected void buildCategoryRenderer() {
 		mRenderer = new DefaultRenderer();
-		int length = mCategorySeries.getItemCount();
-		for (int i = 0; i < length; i++) {
-			SimpleSeriesRenderer r = new SimpleSeriesRenderer();
-			r.setColor(COLORS[i % COLORS.length]);
-			mRenderer.addSeriesRenderer(r);
-		}
 		// 显示标签
 		mRenderer.setShowLabels(true);
 		// 不显示底部说明
@@ -114,7 +111,6 @@ public class PieChart {
 	 */
 	public void addSeries(String s, double v) {
 		SimpleSeriesRenderer ssr = new SimpleSeriesRenderer();
-		ssr.setColor(COLORS[new Random().nextInt(COLORS.length)]);
 		mRenderer.addSeriesRenderer(ssr);
 		mCategorySeries.add(s + " " + FileUtils.getFileSizeFormat((long) v), v);
 	}
@@ -131,6 +127,7 @@ public class PieChart {
 		mRenderer.setChartTitle(s + "  " + FileUtils.getFileSizeFormat(size));
 		mRenderer.setChartTitleTextSize(35);
 		mChartView.repaint();
+
 	}
 
 	/**
@@ -140,15 +137,18 @@ public class PieChart {
 	 */
 	public void optiSeries(long size) {
 		long other = 0;
-		for (int i = 0; i < mCategorySeries.getItemCount(); i++) {
-			double v = mCategorySeries.getValue(i);
-			if (v < size / 100) {
-				mCategorySeries.remove(i);
-				i--;
-				other += v;
+		if (mCategorySeries.getItemCount() > 3) {
+			for (int i = 0; i < mCategorySeries.getItemCount(); i++) {
+				double v = mCategorySeries.getValue(i);
+				if (v < size / 100) {
+					LogUtils.d(mCategorySeries.getCategory(i) + "," + mCategorySeries.getValue(i));
+					mCategorySeries.remove(i);
+					i--;
+					other += v;
+				}
 			}
+			addSeries("other", other);
 		}
-		addSeries("other", other);
 	}
 
 	/**
@@ -164,8 +164,20 @@ public class PieChart {
 	}
 
 	public synchronized void reset() {
-		mCategorySeries.clear();
 		mRenderer.removeAllRenderers();
+		mCategorySeries.clear();
+	}
+
+	public void hide() {
+		mChartView.setVisibility(View.INVISIBLE);
+	}
+
+	public void show() {
 		mChartView.repaint();
+		mChartView.setVisibility(View.VISIBLE);
+	}
+
+	public String getTitle() {
+		return FileUtils.getFilePathFromChartTitle(mRenderer.getChartTitle());
 	}
 }
