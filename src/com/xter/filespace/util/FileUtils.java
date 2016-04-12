@@ -85,4 +85,8 @@ public class FileUtils {
 		return title.substring(0, title.lastIndexOf(" ") - 1);
 	}
 
+	public static String getParentFilePath(String path) {
+		return path.substring(0, path.lastIndexOf(File.separator));
+	}
+
 }

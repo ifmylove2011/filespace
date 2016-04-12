@@ -33,6 +33,7 @@ public class PieChart {
 	 * 绘制所用数据集
 	 */
 	CategorySeries mCategorySeries;
+	CategorySeries mOtherSeries;
 	/**
 	 * 点击分区时监听
 	 */
@@ -84,6 +85,7 @@ public class PieChart {
 	 */
 	protected void buildCategorySeries() {
 		mCategorySeries = new CategorySeries("FileSpace Chart");
+		mOtherSeries = new CategorySeries("FileSpace Other");
 	}
 
 	/**
@@ -99,6 +101,7 @@ public class PieChart {
 		mRenderer.setLabelsTextSize(25);
 		mRenderer.setLabelsColor(Color.YELLOW);
 		mRenderer.setZoomEnabled(true);
+		mRenderer.setZoomButtonsVisible(true);
 		mRenderer.setPanEnabled(true);
 		mRenderer.setClickEnabled(true);
 	}
@@ -127,7 +130,6 @@ public class PieChart {
 		mRenderer.setChartTitle(s + "  " + FileUtils.getFileSizeFormat(size));
 		mRenderer.setChartTitleTextSize(35);
 		mChartView.repaint();
-
 	}
 
 	/**
@@ -136,18 +138,21 @@ public class PieChart {
 	 * @param size 大小
 	 */
 	public void optiSeries(long size) {
-		long other = 0;
+		mOtherSeries.clear();
+		long otherSize = 0;
 		if (mCategorySeries.getItemCount() > 3) {
 			for (int i = 0; i < mCategorySeries.getItemCount(); i++) {
 				double v = mCategorySeries.getValue(i);
 				if (v < size / 100) {
 					LogUtils.d(mCategorySeries.getCategory(i) + "," + mCategorySeries.getValue(i));
+					mOtherSeries.add(mCategorySeries.getCategory(i), mCategorySeries.getValue(i));
 					mCategorySeries.remove(i);
 					i--;
-					other += v;
+					otherSize += v;
 				}
 			}
-			addSeries("other", other);
+			if (otherSize > 1000)
+				addSeries("other", otherSize);
 		}
 	}
 
@@ -163,7 +168,18 @@ public class PieChart {
 		}
 	}
 
-	public synchronized void reset() {
+	public long getOther() {
+		int length = mOtherSeries.getItemCount();
+		long size = 0;
+		for (int i = 0; i < length; i++) {
+			size += mOtherSeries.getValue(i);
+			addSeries(mOtherSeries.getCategory(i), mOtherSeries.getValue(i));
+		}
+		mOtherSeries.clear();
+		return size;
+	}
+
+	public void reset() {
 		mRenderer.removeAllRenderers();
 		mCategorySeries.clear();
 	}

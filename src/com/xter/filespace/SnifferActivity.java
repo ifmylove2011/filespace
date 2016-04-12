@@ -119,7 +119,9 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 					pie.setTitle(file.getAbsolutePath(), total);
 				}
 			} else {
-				
+				if (params[0].endsWith("other")) {
+					pie.setTitle(params[0], pie.getOther());
+				}
 			}
 			return null;
 		}
@@ -140,6 +142,7 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 	@Override
 	public void onBackPressed() {
 		String path = pie.getTitle();
+		LogUtils.d("back000" + path);
 		long time = System.currentTimeMillis();
 		for (int i = 0; i < sdDirs.length; i++) {
 			if (path.equalsIgnoreCase(sdDirs[i])) {
@@ -150,7 +153,7 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 					super.onBackPressed();
 				}
 			} else {
-				new ScanTask(tvScan, pie).execute(new File(path).getParent());
+				new ScanTask(tvScan, pie).execute(FileUtils.getParentFilePath(path));
 			}
 		}
 	}
@@ -158,7 +161,7 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 	@Override
 	public void onSeriesClick(String path) {
 		File f = new File(path);
-		if (f.isDirectory() || path.contains("other")) {
+		if (f.isDirectory() || path.endsWith("other")) {
 			new ScanTask(tvScan, pie).execute(path);
 		} else {
 			Toast.makeText(getApplicationContext(), path + " is not a dir", Toast.LENGTH_SHORT).show();
