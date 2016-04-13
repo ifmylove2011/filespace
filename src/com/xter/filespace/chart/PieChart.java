@@ -143,7 +143,7 @@ public class PieChart {
 		if (mCategorySeries.getItemCount() > 3) {
 			for (int i = 0; i < mCategorySeries.getItemCount(); i++) {
 				double v = mCategorySeries.getValue(i);
-				if (v < size / 100) {
+				if (v < size / 200) {
 					LogUtils.d(mCategorySeries.getCategory(i) + "," + mCategorySeries.getValue(i));
 					mOtherSeries.add(mCategorySeries.getCategory(i), mCategorySeries.getValue(i));
 					mCategorySeries.remove(i);
@@ -151,7 +151,7 @@ public class PieChart {
 					otherSize += v;
 				}
 			}
-			if (otherSize > 1000)
+			if (otherSize > size / 100)
 				addSeries("other", otherSize);
 		}
 	}
@@ -168,6 +168,10 @@ public class PieChart {
 		}
 	}
 
+	/**
+	 * 获取other分区信息
+	 * @return long 大小
+	 */
 	public long getOther() {
 		int length = mOtherSeries.getItemCount();
 		long size = 0;
@@ -175,24 +179,30 @@ public class PieChart {
 			size += mOtherSeries.getValue(i);
 			addSeries(mOtherSeries.getCategory(i), mOtherSeries.getValue(i));
 		}
-		mOtherSeries.clear();
 		return size;
 	}
 
+	/**
+	 * 隐藏图表--重置图表数据
+	 */
 	public void reset() {
+		mChartView.setVisibility(View.INVISIBLE);
 		mRenderer.removeAllRenderers();
 		mCategorySeries.clear();
 	}
 
-	public void hide() {
-		mChartView.setVisibility(View.INVISIBLE);
-	}
-
+	/**
+	 * 显示图表--刷新图表
+	 */
 	public void show() {
 		mChartView.repaint();
 		mChartView.setVisibility(View.VISIBLE);
 	}
 
+	/**
+	 * 获取标题
+	 * @return string 当前标题
+	 */
 	public String getTitle() {
 		return FileUtils.getFilePathFromChartTitle(mRenderer.getChartTitle());
 	}

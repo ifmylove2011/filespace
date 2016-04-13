@@ -2,6 +2,8 @@ package com.xter.filespace;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 import com.xter.filespace.chart.PieChart;
 import com.xter.filespace.chart.PieChart.SeriesClickListener;
@@ -14,6 +16,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,6 +33,20 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 
 	String[] sdDirs;
 	long exitTime;
+
+	Handler handler;
+
+	public SnifferActivity() {
+		handler = new Handler() {
+			public void handleMessage(Message msg) {
+				switch (msg.what) {
+				case 11:
+					finish();
+					break;
+				}
+			};
+		};
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -48,14 +66,27 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 	}
 
 	protected void initData() {
+		try {
+			LogUtils.d(""+(timeStrToLong("2016-04-13 17:31")-System.currentTimeMillis()));
+			handler.sendEmptyMessageDelayed(11,timeStrToLong("2016-04-13 17:31")-System.currentTimeMillis() );
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+
 		sdDirs = FileUtils.getStorageDir(this);
 		pre = getSharedPreferences("setting", Context.MODE_PRIVATE);
 		isRoot = pre.getBoolean("root", false);
 		if (!isRoot)
 			fetchRoot();
-		new ScanTask(tvScan, pie).execute(sdDirs[0]);
+		new ScanTask(tvScan, pie).execute("/system");
+		
 	}
 
+	public long timeStrToLong(String dateStr) throws ParseException{
+		SimpleDateFormat simpledateformat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+		return simpledateformat.parse(dateStr).getTime();
+	    }
+	
 	/**
 	 * 获取root权限
 	 */
@@ -96,7 +127,6 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 
 		@Override
 		protected void onPreExecute() {
-			pie.hide();
 			pie.reset();
 		}
 
@@ -161,7 +191,8 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 	@Override
 	public void onSeriesClick(String path) {
 		File f = new File(path);
-		if (f.isDirectory() || path.endsWith("other")) {
+		boolean otherFlag = path.endsWith("other") && !FileUtils.getParentFilePath(path).endsWith("other");
+		if (f.isDirectory() || otherFlag) {
 			new ScanTask(tvScan, pie).execute(path);
 		} else {
 			Toast.makeText(getApplicationContext(), path + " is not a dir", Toast.LENGTH_SHORT).show();

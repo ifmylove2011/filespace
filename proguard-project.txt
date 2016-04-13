@@ -18,3 +18,80 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+
+# optimization 0-7
+-optimizationpasses 5
+
+# keep classname regularly, no mix of case
+-dontusemixedcaseclassnames
+
+# keep non-public library normally
+-dontskipnonpubliclibraryclasses
+
+# log proguard 
+-verbose
+
+# algorithm of optimizaiton
+-optimizations !code/simplification/arithmetic,!field/*,!class/merging/*
+
+# keep origin 
+-keep public class * extends android.app.Activity
+-keep public class * extends android.app.Application
+-keep public class * extends android.app.Service
+-keep public class * extends android.content.BroadcastReceiver
+-keep public class * extends android.content.ContentProvider
+-keep public class * extends android.app.backup.BackupAgentHelper
+-keep public class * extends android.preference.Preference
+-keepattributes *Annotation*
+-keep public class com.google.vending.licensing.ILicensingService
+-keep public class com.android.vending.licensing.ILicensingService
+ 
+
+-keepclasseswithmembernames class * {
+    native <methods>;
+}
+ 
+#keep setters in Views so that animations can still work.
+-keepclassmembers public class * extends android.view.View {
+   void set*(***);
+   *** get*();
+}
+ 
+-keepclassmembers class * extends android.app.Activity {
+   public void *(android.view.View);
+}
+ 
+#keep enum
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+
+# keep serialize 
+-keepnames class * implements java.io.Serializable 
+-keepclassmembers class * implements java.io.Serializable { 
+    static final long serialVersionUID;  
+    private static final java.io.ObjectStreamField[] serialPersistentFields;  
+    !static !transient <fields>;  
+    private void writeObject(java.io.ObjectOutputStream);  
+    private void readObject(java.io.ObjectInputStream);  
+    java.lang.Object writeReplace();  
+    java.lang.Object readResolve();  
+}  
+-keep class * implements android.os.Parcelable {
+  public static final android.os.Parcelable$Creator *;
+}
+ 
+# keep .R file
+-keepclassmembers class **.R$* {
+    public static <fields>;
+}
+ 
+-dontwarn android.support.**
+ 
+# keep order of jars
+-ignorewarnings
+-libraryjars libs/android-support-v4.jar
+-libraryjars libs/achartengine-1.1.0.jar
+ 
