@@ -11,6 +11,14 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true" />
 
+    <ToggleButton
+        android:id="@+id/tb_sddir"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/tv_scan"
+        android:textOff="@string/internal_sd"
+        android:textOn="@string/external_sd" />
+
     <LinearLayout
         android:id="@+id/sniffer"
         android:layout_width="match_parent"

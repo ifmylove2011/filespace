@@ -2,6 +2,7 @@
 <resources>
 
     <string name="app_name">FileSpace</string>
-    <string name="hello_world">Hello world!</string>
+    <string name="internal_sd">Internal Storage</string>
+    <string name="external_sd">External Storage</string>
 
 </resources>

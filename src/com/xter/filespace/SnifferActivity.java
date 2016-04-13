@@ -2,8 +2,6 @@ package com.xter.filespace;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 
 import com.xter.filespace.chart.PieChart;
 import com.xter.filespace.chart.PieChart.SeriesClickListener;
@@ -16,37 +14,26 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
+import android.view.View;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 public class SnifferActivity extends Activity implements SeriesClickListener {
 
-	LinearLayout mSnifferLayout;
-	PieChart pie;
+	LinearLayout llSniffer;
 	TextView tvScan;
+	ToggleButton tbSddir;
 
-	SharedPreferences pre;
+	SharedPreferences mPre;
+	PieChart mPie;
+
 	boolean isRoot;
-
 	String[] sdDirs;
 	long exitTime;
-
-	Handler handler;
-
-	public SnifferActivity() {
-		handler = new Handler() {
-			public void handleMessage(Message msg) {
-				switch (msg.what) {
-				case 11:
-					finish();
-					break;
-				}
-			};
-		};
-	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -57,42 +44,45 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 	}
 
 	protected void initLayout() {
-		pie = new PieChart();
+		mPie = new PieChart();
 
-		mSnifferLayout = (LinearLayout) findViewById(R.id.sniffer);
-
+		tbSddir = (ToggleButton) findViewById(R.id.tb_sddir);
 		tvScan = (TextView) findViewById(R.id.tv_scan);
-		mSnifferLayout.addView(pie.getChartView(this));
+		llSniffer = (LinearLayout) findViewById(R.id.sniffer);
+		llSniffer.addView(mPie.getChartView(this));
 	}
 
 	protected void initData() {
-		try {
-			LogUtils.d(""+(timeStrToLong("2016-04-13 17:31")-System.currentTimeMillis()));
-			handler.sendEmptyMessageDelayed(11,timeStrToLong("2016-04-13 17:31")-System.currentTimeMillis() );
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
-
 		sdDirs = FileUtils.getStorageDir(this);
-		pre = getSharedPreferences("setting", Context.MODE_PRIVATE);
-		isRoot = pre.getBoolean("root", false);
+		if (sdDirs.length > 1) {
+			tbSddir.setVisibility(View.VISIBLE);
+			tbSddir.bringToFront();
+			tbSddir.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+				@Override
+				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+					if (isChecked)
+						new ScanTask(tvScan, mPie).execute(sdDirs[1]);
+					else
+						new ScanTask(tvScan, mPie).execute(sdDirs[0]);
+				}
+			});
+		} else {
+			tbSddir.setVisibility(View.GONE);
+		}
+		mPre = getSharedPreferences("setting", Context.MODE_PRIVATE);
+		isRoot = mPre.getBoolean("root", false);
 		if (!isRoot)
 			fetchRoot();
-		new ScanTask(tvScan, pie).execute("/system");
-		
+		new ScanTask(tvScan, mPie).execute(sdDirs[0]);
 	}
 
-	public long timeStrToLong(String dateStr) throws ParseException{
-		SimpleDateFormat simpledateformat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-		return simpledateformat.parse(dateStr).getTime();
-	    }
-	
 	/**
 	 * 获取root权限
 	 */
 	protected void fetchRoot() {
 		try {
-			SharedPreferences.Editor editor = pre.edit();
+			SharedPreferences.Editor editor = mPre.edit();
 			if (LinuxShell.isRoot(Runtime.getRuntime(), 100)) {
 				Toast.makeText(getApplicationContext(), "root successed", Toast.LENGTH_SHORT).show();
 				isRoot = true;
@@ -171,7 +161,7 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 
 	@Override
 	public void onBackPressed() {
-		String path = pie.getTitle();
+		String path = mPie.getTitle();
 		LogUtils.d("back000" + path);
 		long time = System.currentTimeMillis();
 		for (int i = 0; i < sdDirs.length; i++) {
@@ -179,13 +169,16 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 				if (time - exitTime > 2000) {
 					exitTime = time;
 					Toast.makeText(this, "再按一次退出", Toast.LENGTH_SHORT).show();
+					return;
 				} else {
 					super.onBackPressed();
 				}
-			} else {
-				new ScanTask(tvScan, pie).execute(FileUtils.getParentFilePath(path));
 			}
 		}
+		if (mPie.isFinish())
+			new ScanTask(tvScan, mPie).execute(FileUtils.getParentFilePath(path));
+		else
+			return;
 	}
 
 	@Override
@@ -193,7 +186,7 @@ public class SnifferActivity extends Activity implements SeriesClickListener {
 		File f = new File(path);
 		boolean otherFlag = path.endsWith("other") && !FileUtils.getParentFilePath(path).endsWith("other");
 		if (f.isDirectory() || otherFlag) {
-			new ScanTask(tvScan, pie).execute(path);
+			new ScanTask(tvScan, mPie).execute(path);
 		} else {
 			Toast.makeText(getApplicationContext(), path + " is not a dir", Toast.LENGTH_SHORT).show();
 		}

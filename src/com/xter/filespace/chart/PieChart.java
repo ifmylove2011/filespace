@@ -40,6 +40,11 @@ public class PieChart {
 	SeriesClickListener seriesClickListener;
 
 	/**
+	 * 是否就绪
+	 */
+	boolean isFinished;
+
+	/**
 	 * 颜色区分
 	 */
 	static final int[] COLORS = new int[] { Color.BLUE, Color.GREEN, Color.MAGENTA, Color.YELLOW, Color.CYAN };
@@ -170,6 +175,7 @@ public class PieChart {
 
 	/**
 	 * 获取other分区信息
+	 * 
 	 * @return long 大小
 	 */
 	public long getOther() {
@@ -186,9 +192,10 @@ public class PieChart {
 	 * 隐藏图表--重置图表数据
 	 */
 	public void reset() {
-		mChartView.setVisibility(View.INVISIBLE);
+		mChartView.setVisibility(View.GONE);
 		mRenderer.removeAllRenderers();
 		mCategorySeries.clear();
+		isFinished = false;
 	}
 
 	/**
@@ -197,13 +204,24 @@ public class PieChart {
 	public void show() {
 		mChartView.repaint();
 		mChartView.setVisibility(View.VISIBLE);
+		isFinished = true;
 	}
 
 	/**
 	 * 获取标题
+	 * 
 	 * @return string 当前标题
 	 */
 	public String getTitle() {
 		return FileUtils.getFilePathFromChartTitle(mRenderer.getChartTitle());
+	}
+
+	/**
+	 * 是否处于就绪状态
+	 * 
+	 * @return
+	 */
+	public boolean isFinish() {
+		return isFinished;
 	}
 }
